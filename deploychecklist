@@ -1,0 +1,43 @@
+# Sugi Parfume Deployment Checklist
+
+## Pre-Deployment
+- [ ] All environment variables are set in Vercel
+- [ ] Database connection is working
+- [ ] Redis cache is accessible
+- [ ] Stripe keys are configured
+- [ ] Email service is set up
+- [ ] All dependencies are up to date
+- [ ] Tests are passing
+- [ ] Build process completes successfully
+
+## Environment Variables Required
+- [ ] MONGODB_URI
+- [ ] STRIPE_SECRET_KEY
+- [ ] STRIPE_WEBHOOK_SECRET
+- [ ] SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+- [ ] SUPPORT_EMAIL
+- [ ] FRONTEND_URL
+- [ ] REACT_APP_API_URL
+- [ ] REACT_APP_WS_URL
+- [ ] JWT_SECRET
+- [ ] REDIS_URL
+- [ ] PORT
+
+## Post-Deployment
+- [ ] Health endpoint responds correctly
+- [ ] User registration works
+- [ ] Login functionality works
+- [ ] AI recommendations are functional
+- [ ] Custom fragrance builder works
+- [ ] Subscription system is operational
+- [ ] Admin dashboard is accessible
+- [ ] Email notifications are sent
+- [ ] Payment processing works
+- [ ] Real-time features are working
+
+## Monitoring Setup
+- [ ] Error tracking is enabled
+- [ ] Performance monitoring is active
+- [ ] Uptime monitoring is configured
+- [ ] Log aggregation is working
+- [ ] Alerts are set up for critical issues
