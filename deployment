@@ -1,0 +1,191 @@
+# Sugi Parfume Enterprise Deployment Guide
+
+This guide provides detailed instructions for deploying the Sugi Parfume enterprise platform to production.
+
+## Prerequisites
+
+Before deploying, ensure you have the following:
+
+- Vercel account with CLI installed (`npm i -g vercel`)
+- MongoDB Atlas account with a cluster created
+- Redis Cloud account with a database created
+- Stripe account with API keys
+- SMTP provider (SendGrid, Gmail, etc.)
+- All environment variables configured
+
+## Environment Variables
+
+Ensure all these environment variables are set in your Vercel project:
+
+\`\`\`
+# Database
+MONGODB_URI=mongodb+srv://...
+
+# Authentication
+JWT_SECRET=sugi_super_secret_key_2025
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Email
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=SG.xxx
+SUPPORT_EMAIL=support@sugi-parfume.com
+
+# URLs
+FRONTEND_URL=https://sugi-parfume.vercel.app
+REACT_APP_API_URL=https://sugi-parfume.vercel.app/api
+REACT_APP_WS_URL=wss://sugi-parfume.vercel.app
+
+# Cache
+REDIS_URL=redis://...
+
+# Server
+PORT=8080
+\`\`\`
+
+## Deployment Steps
+
+### 1. Prepare for Deployment
+
+\`\`\`bash
+# Install dependencies
+npm install
+
+# Install client dependencies
+cd client && npm install && cd ..
+
+# Run database migrations
+node scripts/migrate.js
+\`\`\`
+
+### 2. Deploy to Vercel
+
+#### Option 1: Automated Deployment
+
+\`\`\`bash
+# Run the deployment script
+node scripts/deploy.js --prod
+\`\`\`
+
+#### Option 2: Manual Deployment
+
+\`\`\`bash
+# Build the client
+cd client && npm run build && cd ..
+
+# Deploy to Vercel
+vercel --prod
+\`\`\`
+
+### 3. Post-Deployment Verification
+
+After deployment, verify that everything is working correctly:
+
+1. Check the health endpoint: `https://your-domain.com/api/health`
+2. Verify the login page works
+3. Test the AI recommendations
+4. Confirm subscription creation
+
+### 4. Set Up Monitoring
+
+\`\`\`bash
+# Start the monitoring script
+node scripts/monitor.js
+\`\`\`
+
+Consider setting up external monitoring with services like:
+- Datadog
+- New Relic
+- Sentry
+- UptimeRobot
+
+### 5. Set Up Stripe Webhooks
+
+1. Go to your Stripe Dashboard
+2. Navigate to Developers > Webhooks
+3. Add a new endpoint: `https://your-domain.com/api/subscription/webhook`
+4. Select events:
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+5. Copy the webhook secret and update your `STRIPE_WEBHOOK_SECRET` environment variable
+
+## Scaling Considerations
+
+### Database Scaling
+
+- Enable MongoDB Atlas auto-scaling
+- Set up proper indexes for frequently queried fields
+- Consider sharding for very large datasets
+
+### Redis Scaling
+
+- Increase Redis memory allocation as cache usage grows
+- Enable persistence for critical data
+- Consider Redis Cluster for high availability
+
+### Application Scaling
+
+- Enable Vercel auto-scaling
+- Optimize API endpoints with high traffic
+- Implement proper caching strategies
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Errors**
+   - Check MongoDB connection string
+   - Verify network access settings in MongoDB Atlas
+   - Check for IP restrictions
+
+2. **Redis Connection Issues**
+   - Verify Redis URL format
+   - Check Redis Cloud firewall settings
+   - Test connection with Redis CLI
+
+3. **API Errors**
+   - Check server logs
+   - Verify environment variables
+   - Test endpoints with Postman
+
+### Getting Help
+
+If you encounter issues not covered in this guide, please:
+
+1. Check the logs in the Vercel dashboard
+2. Run the monitoring script for detailed diagnostics
+3. Contact support at support@sugi-parfume.com
+
+## Maintenance
+
+### Regular Tasks
+
+1. **Database Backups**
+   - MongoDB Atlas provides automated backups
+   - Consider additional manual backups for critical data
+
+2. **Dependency Updates**
+   - Regularly update npm packages
+   - Test thoroughly after updates
+
+3. **Performance Monitoring**
+   - Run performance tests regularly
+   - Monitor API response times
+   - Check database query performance
+
+### Security Updates
+
+1. **Dependency Scanning**
+   - Use `npm audit` to check for vulnerabilities
+   - Update packages with security issues
+
+2. **API Security**
+   - Regularly review rate limits
+   - Monitor for unusual traffic patterns
+   - Update JWT secrets periodically
