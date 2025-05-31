@@ -1,0 +1,153 @@
+#!/bin/bash
+
+# Sugi Parfume Enterprise Redeployment Script
+# This script handles the complete redeployment process
+
+set -e  # Exit on any error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+PROJECT_NAME="sugi-parfume"
+PRODUCTION=${1:-false}
+
+echo -e "${BLUE}🚀 Starting Sugi Parfume Redeployment${NC}"
+echo -e "${BLUE}Mode: $([ "$PRODUCTION" = "true" ] && echo "PRODUCTION" || echo "Preview")${NC}"
+
+# Function to print status
+print_status() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+print_step() {
+    echo -e "${BLUE}→${NC} $1"
+}
+
+# Step 1: Environment Check
+print_step "Checking environment variables..."
+
+required_vars=(
+    "MONGODB_URI"
+    "STRIPE_SECRET_KEY" 
+    "STRIPE_WEBHOOK_SECRET"
+    "SMTP_HOST"
+    "SMTP_PORT"
+    "SMTP_USER"
+    "SMTP_PASS"
+    "FRONTEND_URL"
+    "SUPPORT_EMAIL"
+    "REACT_APP_API_URL"
+    "REACT_APP_WS_URL"
+    "JWT_SECRET"
+    "REDIS_URL"
+)
+
+missing_vars=()
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        missing_vars+=("$var")
+    fi
+done
+
+if [ ${#missing_vars[@]} -ne 0 ]; then
+    print_error "Missing environment variables: ${missing_vars[*]}"
+    echo "Please set these variables before deploying."
+    exit 1
+fi
+
+print_status "All environment variables are set"
+
+# Step 2: Install dependencies
+print_step "Installing dependencies..."
+npm install
+print_status "Server dependencies installed"
+
+cd client
+npm install
+print_status "Client dependencies installed"
+cd ..
+
+# Step 3: Run tests (if available)
+print_step "Running tests..."
+if [ -f "package.json" ] && grep -q '"test"' package.json; then
+    npm test -- --passWithNoTests
+    print_status "Tests passed"
+else
+    print_warning "No tests found, skipping..."
+fi
+
+# Step 4: Database migrations
+print_step "Running database migrations..."
+if node scripts/migrate.js; then
+    print_status "Database migrations completed"
+else
+    print_error "Database migrations failed"
+    exit 1
+fi
+
+# Step 5: Build client
+print_step "Building client application..."
+cd client
+if npm run build; then
+    print_status "Client build completed"
+else
+    print_error "Client build failed"
+    exit 1
+fi
+cd ..
+
+# Step 6: Deploy to Vercel
+print_step "Deploying to Vercel..."
+if [ "$PRODUCTION" = "true" ]; then
+    if vercel --prod --yes; then
+        print_status "Production deployment completed"
+    else
+        print_error "Production deployment failed"
+        exit 1
+    fi
+else
+    if vercel --yes; then
+        print_status "Preview deployment completed"
+    else
+        print_error "Preview deployment failed"
+        exit 1
+    fi
+fi
+
+# Step 7: Post-deployment verification
+print_step "Running post-deployment verification..."
+sleep 10  # Wait for deployment to be ready
+
+# Check health endpoint
+if [ -n "$REACT_APP_API_URL" ]; then
+    if curl -f "$REACT_APP_API_URL/health" > /dev/null 2>&1; then
+        print_status "API health check passed"
+    else
+        print_warning "API health check failed - please verify manually"
+    fi
+fi
+
+echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
+echo -e "${BLUE}Your Sugi Parfume platform is live at: $FRONTEND_URL${NC}"
+
+# Display next steps
+echo -e "\n${BLUE}Next Steps:${NC}"
+echo "1. Verify the application is working correctly"
+echo "2. Test user registration and login"
+echo "3. Check AI recommendations functionality"
+echo "4. Verify subscription system"
+echo "5. Test admin dashboard"
+echo "6. Set up monitoring alerts"
